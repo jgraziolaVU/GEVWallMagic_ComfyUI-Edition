@@ -1,0 +1,440 @@
+{
+  "last_node_id": 16,
+  "last_link_id": 18,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [50, 300],
+      "size": [320, 320],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [1, 12],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["input.png", "image"]
+    },
+    {
+      "id": 2,
+      "type": "QwenImageEditLoader",
+      "pos": [50, 50],
+      "size": [320, 100],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "QWEN_PIPELINE",
+          "type": "QWEN_PIPELINE",
+          "links": [2],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "QwenImageEditLoader"
+      },
+      "widgets_values": ["Qwen/Qwen-Image-Edit", "bfloat16"]
+    },
+    {
+      "id": 3,
+      "type": "QwenImageEdit",
+      "pos": [450, 150],
+      "size": [350, 200],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pipeline",
+          "type": "QWEN_PIPELINE",
+          "link": 2
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [3],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "QwenImageEdit"
+      },
+      "widgets_values": [
+        "Studio Ghibli",
+        "",
+        4.0,
+        50,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "type": "ImageBypassSwitch",
+      "pos": [450, 400],
+      "size": [200, 100],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_if_true",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "image_if_false",
+          "type": "IMAGE",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [4],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageBypassSwitch"
+      },
+      "widgets_values": [true]
+    },
+    {
+      "id": 5,
+      "type": "ImageCropToAspectRatio",
+      "pos": [720, 300],
+      "size": [280, 150],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [5],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCropToAspectRatio"
+      },
+      "widgets_values": ["32:9 (Super Ultrawide)", 5120, 1440, "center"]
+    },
+    {
+      "id": 6,
+      "type": "SHARPModelLoader",
+      "pos": [720, 50],
+      "size": [280, 100],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "SHARP_MODEL",
+          "type": "SHARP_MODEL",
+          "links": [6],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SHARPModelLoader"
+      },
+      "widgets_values": ["sharp_2572gikvuh.pt"]
+    },
+    {
+      "id": 7,
+      "type": "SHARPPredict",
+      "pos": [1070, 150],
+      "size": [300, 150],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "SHARP_MODEL",
+          "link": 6
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GAUSSIAN_SPLAT",
+          "type": "GAUSSIAN_SPLAT",
+          "links": [7, 15],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SHARPPredict"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "ParallaxCameraPath",
+      "pos": [1070, 350],
+      "size": [300, 180],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "CAMERA_PATH",
+          "type": "CAMERA_PATH",
+          "links": [8],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ParallaxCameraPath"
+      },
+      "widgets_values": [
+        "horizontal_oscillation",
+        0.15,
+        300,
+        30,
+        "sinusoidal"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "GaussianSplatRenderer",
+      "pos": [1440, 200],
+      "size": [320, 180],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "gaussian_splat",
+          "type": "GAUSSIAN_SPLAT",
+          "link": 7
+        },
+        {
+          "name": "camera_path",
+          "type": "CAMERA_PATH",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FRAMES",
+          "type": "IMAGE",
+          "links": [9],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GaussianSplatRenderer"
+      },
+      "widgets_values": [5120, 1440]
+    },
+    {
+      "id": 10,
+      "type": "VideoEncode",
+      "pos": [1830, 200],
+      "size": [280, 180],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [10],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VideoEncode"
+      },
+      "widgets_values": [30, "libx264", 18, "slow", "yuv420p"]
+    },
+    {
+      "id": 11,
+      "type": "SaveVideo",
+      "pos": [2180, 200],
+      "size": [250, 120],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 10
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["parallax_output", "mp4"]
+    },
+    {
+      "id": 12,
+      "type": "PreviewImage",
+      "pos": [880, 500],
+      "size": [400, 300],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 13,
+      "type": "SaveGaussianSplat",
+      "pos": [1440, 450],
+      "size": [250, 100],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "gaussian_splat",
+          "type": "GAUSSIAN_SPLAT",
+          "link": 15
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveGaussianSplat"
+      },
+      "widgets_values": ["parallax_3d"]
+    },
+    {
+      "id": 14,
+      "type": "Note",
+      "pos": [50, 680],
+      "size": [400, 150],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "properties": {},
+      "widgets_values": [
+        "◈ PARALLAX STUDIO v1.2\n   Your Photos. Alive.\n\n1. Load your image\n2. Toggle Qwen enhancement ON/OFF\n3. Set aspect ratio and resolution\n4. SHARP extracts 3D structure\n5. Render parallax video\n\nTip: Set bypass switch to FALSE to skip Qwen"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 15,
+      "type": "Note",
+      "pos": [450, 580],
+      "size": [350, 100],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "properties": {},
+      "widgets_values": [
+        "STYLE PRESETS:\n• Studio Ghibli\n• Oil Painting\n• Watercolor\n• Cyberpunk\n• Golden Hour\n• Dramatic Sky\n• Add Fog"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 16,
+      "type": "Note",
+      "pos": [1070, 580],
+      "size": [350, 100],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "properties": {},
+      "widgets_values": [
+        "CAMERA PATHS:\n• horizontal_oscillation (left-right)\n• vertical_oscillation (up-down)\n• circular (gentle orbit)\n• push_pull (zoom)\n• figure_eight (complex)"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    }
+  ],
+  "links": [
+    [1, 1, 0, 3, 1, "IMAGE"],
+    [2, 2, 0, 3, 0, "QWEN_PIPELINE"],
+    [3, 3, 0, 4, 0, "IMAGE"],
+    [4, 4, 0, 5, 0, "IMAGE"],
+    [5, 5, 0, 7, 1, "IMAGE"],
+    [6, 6, 0, 7, 0, "SHARP_MODEL"],
+    [7, 7, 0, 9, 0, "GAUSSIAN_SPLAT"],
+    [8, 8, 0, 9, 1, "CAMERA_PATH"],
+    [9, 9, 0, 10, 0, "IMAGE"],
+    [10, 10, 0, 11, 0, "VIDEO"],
+    [12, 1, 0, 4, 1, "IMAGE"],
+    [15, 7, 0, 13, 0, "GAUSSIAN_SPLAT"]
+  ],
+  "groups": [
+    {
+      "title": "1. INPUT & ENHANCEMENT",
+      "bounding": [40, 0, 760, 720],
+      "color": "#3f789e"
+    },
+    {
+      "title": "2. 3D EXTRACTION",
+      "bounding": [820, 0, 580, 720],
+      "color": "#8f3f9e"
+    },
+    {
+      "title": "3. RENDER & OUTPUT",
+      "bounding": [1420, 0, 1050, 600],
+      "color": "#3f9e5a"
+    }
+  ],
+  "config": {},
+  "extra": {
+    "info": {
+      "name": "Parallax Studio v1.2",
+      "author": "Villanova GIS Lab",
+      "description": "Your Photos. Alive. Chain Qwen-Image-Edit and Apple SHARP for depth-enhanced parallax videos.",
+      "version": "1.2.0"
+    }
+  },
+  "version": 0.4
+}
