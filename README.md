@@ -1,245 +1,165 @@
-# ◈ Parallax Studio - ComfyUI Edition
+# ◈ Parallax Studio v1.2 — ComfyUI Edition
 
-**Version 1.2** | Chain Qwen-Image-Edit + Apple SHARP for depth-enhanced video wall content
+### *Your Photos. Alive.*
 
 ---
 
-## What's Included
+## What Is This?
 
-```
-parallax_studio/
-├── __init__.py              # Node registration
-├── qwen_nodes.py            # Qwen-Image-Edit nodes
-├── sharp_nodes.py           # Apple SHARP 3D extraction nodes
-├── video_nodes.py           # Video encoding nodes
-├── parallax_workflow.json   # Pre-built workflow
-├── install_comfyui.bat      # One-click installer
-└── README.md                # This file
-```
+The **power user version** of Parallax Studio.
+
+Same magic — transform any photo into a living, breathing display with real depth — but with a node-based interface that lets you experiment, chain additional models, and build custom workflows.
 
 ---
 
 ## Quick Start
 
-### Option 1: Automatic Installation (Recommended)
+### Step 1: Install
 
-1. Double-click `install_comfyui.bat`
-2. Wait 15-30 minutes for installation
-3. Double-click "Parallax Studio (ComfyUI)" shortcut on Desktop
-4. Open http://127.0.0.1:8188 in your browser
-5. Load the workflow: **Load → parallax_workflow.json**
+Double-click `install_comfyui.bat` and wait 20-40 minutes.
 
-### Option 2: Manual Installation
+### Step 2: Run
 
-```bash
-# 1. Clone ComfyUI
-git clone https://github.com/comfyanonymous/ComfyUI.git
-cd ComfyUI
+Double-click **"Parallax Studio (ComfyUI)"** on your Desktop.
 
-# 2. Install requirements
-pip install -r requirements.txt
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+### Step 3: Open Browser
 
-# 3. Install additional dependencies
-pip install git+https://github.com/huggingface/diffusers
-pip install huggingface-hub plyfile gsplat tqdm
+Go to **http://127.0.0.1:8188**
 
-# 4. Copy Parallax Studio nodes
-mkdir -p custom_nodes/parallax_studio
-# Copy all .py files to this folder
+### Step 4: Load Workflow
 
-# 5. Download SHARP model
-mkdir -p models/sharp
-huggingface-cli download --include sharp_2572gikvuh.pt --local-dir models/sharp apple/Sharp
+Click **Load** → select **parallax_workflow.json**
 
-# 6. Run ComfyUI
-python main.py --listen --highvram
+### Step 5: Create
+
+1. Load your image into the **LoadImage** node
+2. Toggle Qwen enhancement ON/OFF with the **Bypass Switch**
+3. Click **Queue Prompt**
+4. Wait for magic
+
+---
+
+## Folder Structure
+
+```
+ParallaxStudio-ComfyUI/
+├── custom_nodes/
+│   └── parallax_studio/
+│       ├── __init__.py          ← Node registration
+│       ├── qwen_nodes.py        ← Style transfer nodes
+│       ├── sharp_nodes.py       ← 3D extraction nodes
+│       └── video_nodes.py       ← Video encoding nodes
+├── workflows/
+│   └── parallax_workflow.json   ← Pre-built workflow
+├── install_comfyui.bat          ← One-click installer
+└── README.md                    ← You're reading it
 ```
 
 ---
 
-## The Workflow
+## Custom Nodes
 
-```
-┌─────────────┐     ┌─────────────────┐     ┌───────────────┐
-│ Load Image  │────▶│ Qwen-Image-Edit │────▶│ Bypass Switch │
-└─────────────┘     │ (Style Transfer)│     │ (ON/OFF)      │
-                    └─────────────────┘     └───────┬───────┘
-                                                    │
-                    ┌───────────────────────────────▼───────┐
-                    │         Crop to Aspect Ratio          │
-                    │    (16:9, 21:9, 32:9, or custom)      │
-                    └───────────────────────────────┬───────┘
-                                                    │
-┌─────────────────┐                                 │
-│ SHARP Model     │─────────┐                       │
-│ Loader          │         │                       │
-└─────────────────┘         ▼                       │
-                    ┌───────────────┐               │
-                    │ SHARP Predict │◀──────────────┘
-                    │ (3D Extract)  │
-                    └───────┬───────┘
-                            │
-                            ▼
-                    ┌───────────────┐     ┌────────────────┐
-                    │   Gaussian    │◀────│ Camera Path    │
-                    │ Splat Render  │     │ Generator      │
-                    └───────┬───────┘     └────────────────┘
-                            │
-                            ▼
-                    ┌───────────────┐     ┌────────────────┐
-                    │ Video Encode  │────▶│  Save Video    │
-                    │ (FFmpeg)      │     │  (.mp4)        │
-                    └───────────────┘     └────────────────┘
-```
+### Parallax Studio/Qwen
+
+| Node | Description |
+|------|-------------|
+| **◈ Qwen-Image-Edit Loader** | Load the 20B Qwen model |
+| **◈ Qwen Image Edit** | Apply style presets or custom prompts |
+| **◈ Qwen Image Edit (Batch)** | Process multiple images |
+| **◈ Image Bypass Switch** | Toggle enhancement ON/OFF |
+| **◈ Crop to Aspect Ratio** | 16:9, 21:9, 32:9, custom |
+
+### Parallax Studio/SHARP
+
+| Node | Description |
+|------|-------------|
+| **◈ SHARP Model Loader** | Load Apple SHARP checkpoint |
+| **◈ SHARP Predict** | Extract 3D Gaussian Splat |
+| **◈ Parallax Camera Path** | Generate motion paths |
+| **◈ Gaussian Splat Renderer** | Render frames from 3D |
+| **◈ Save Gaussian Splat** | Export .ply file |
+
+### Parallax Studio/Output
+
+| Node | Description |
+|------|-------------|
+| **◈ Video Encode** | FFmpeg encoding (H.264, H.265, VP9, ProRes) |
+| **◈ Save Video** | Save to output folder |
+| **◈ Preview Video** | Preview in ComfyUI |
+| **◈ Loop Video** | Extend by looping |
 
 ---
 
-## Custom Nodes Reference
+## Style Presets
 
-### Qwen Nodes (Parallax Studio/Qwen)
+| Preset | Effect |
+|--------|--------|
+| Studio Ghibli | Soft anime aesthetic |
+| Oil Painting | Classical brushstrokes |
+| Watercolor | Soft, translucent colors |
+| Cyberpunk | Neon lights, futuristic |
+| Golden Hour | Warm sunset lighting |
+| Dramatic Sky | Epic sky replacement |
+| Add Fog | Atmospheric mist |
+| Noir | Black & white drama |
+| Impressionist | Monet-style brushwork |
+| Vintage Film | 1970s film look |
+| Winter Scene | Snow coverage |
 
-| Node | Description |
-|------|-------------|
-| **Qwen-Image-Edit Loader** | Load the 20B Qwen model (downloads ~40GB on first use) |
-| **Qwen Image Edit** | Apply style transfer with presets or custom prompts |
-| **Qwen Image Edit (Batch)** | Process multiple images |
+---
 
-**Style Presets:**
-- Studio Ghibli
-- Oil Painting
-- Watercolor
-- Cyberpunk
-- Golden Hour
-- Noir
-- Impressionist
-- Pixel Art
-- Vintage Film
-- Dramatic Sky
-- Add Fog
-- Winter Scene
+## Camera Paths
 
-### SHARP Nodes (Parallax Studio/SHARP)
-
-| Node | Description |
-|------|-------------|
-| **SHARP Model Loader** | Load Apple SHARP checkpoint |
-| **SHARP Predict** | Extract 3D Gaussian Splat from image |
-| **Save Gaussian Splat** | Export .ply file for external use |
-
-### Render Nodes (Parallax Studio/Render)
-
-| Node | Description |
-|------|-------------|
-| **Parallax Camera Path** | Generate oscillation/orbit paths |
-| **Gaussian Splat Renderer** | Render frames from 3D representation |
-
-**Camera Path Types:**
-- `horizontal_oscillation` — Left-right sweep (default)
-- `vertical_oscillation` — Up-down sweep
-- `circular` — Gentle orbit
-- `push_pull` — Zoom in-out
-- `figure_eight` — Complex path
-
-### Output Nodes (Parallax Studio/Output)
-
-| Node | Description |
-|------|-------------|
-| **Video Encode** | Encode frames to video (H.264, H.265, VP9, ProRes) |
-| **Save Video** | Save to output folder |
-| **Preview Video** | Preview in ComfyUI |
-| **Loop Video** | Extend video by looping |
-
-### Utility Nodes (Parallax Studio/Utils)
-
-| Node | Description |
-|------|-------------|
-| **Image Bypass Switch** | Toggle Qwen enhancement on/off |
-| **Crop to Aspect Ratio** | 16:9, 21:9, 32:9, or custom |
+| Path | Motion |
+|------|--------|
+| `horizontal_oscillation` | Left-right sweep (default) |
+| `vertical_oscillation` | Up-down sweep |
+| `circular` | Gentle orbit |
+| `push_pull` | Zoom in-out |
+| `figure_eight` | Complex path |
 
 ---
 
 ## Parameters Guide
 
-### Qwen-Image-Edit
+### Qwen Image Edit
+
 | Parameter | Range | Default | Notes |
 |-----------|-------|---------|-------|
-| cfg_scale | 1-10 | 4.0 | Higher = stronger prompt adherence |
-| steps | 20-100 | 50 | More steps = better quality, slower |
+| cfg_scale | 1-10 | 4.0 | Higher = stronger style |
+| steps | 20-100 | 50 | More = better quality |
 | seed | 0-2B | 0 | For reproducibility |
 
-### Camera Path
+### Parallax Camera Path
+
 | Parameter | Range | Default | Notes |
 |-----------|-------|---------|-------|
-| amplitude | 0.01-0.5 | 0.15 | How far camera moves |
-| total_frames | 30-1800 | 300 | 300 @ 30fps = 10 second loop |
+| amplitude | 0.01-0.5 | 0.15 | Depth intensity |
+| total_frames | 30-1800 | 300 | 300 @ 30fps = 10s |
 | fps | 24-60 | 30 | Frame rate |
 | easing | sinusoidal/linear | sinusoidal | Motion smoothness |
 
 ### Video Encode
+
 | Parameter | Options | Default | Notes |
 |-----------|---------|---------|-------|
-| codec | libx264, libx265, VP9, ProRes | libx264 | H.264 is most compatible |
-| crf | 0-51 | 18 | Lower = better quality, larger file |
-| preset | ultrafast-veryslow | slow | Slower = better compression |
+| codec | H.264, H.265, VP9, ProRes | H.264 | Compatibility |
+| crf | 0-51 | 18 | Lower = better quality |
+| preset | ultrafast-veryslow | slow | Compression efficiency |
 
 ---
 
-## Tips for Best Results
+## Why ComfyUI?
 
-### Image Selection
-✓ Choose images with clear depth layers (foreground/middle/background)
-✓ Landscapes, cityscapes, interiors work great
-✓ Higher resolution input = better output
-✗ Avoid flat subjects (documents, walls)
-✗ Avoid heavy reflections or transparency
+**Experimentation** — Drag wires, try things, see what happens
 
-### Qwen Enhancement
-- **Skip it** if your source image is already beautiful
-- **Use it** to transform mundane photos into art
-- **"Dramatic Sky"** adds visual interest to boring skies
-- **"Add Fog"** actually enhances depth perception
+**Extensibility** — Add ControlNet, upscalers, other models later
 
-### Parallax Settings
-- Start with amplitude **0.10-0.15** (subtle)
-- Increase to **0.25-0.40** only if effect is too weak
-- Longer loops (**15-20 sec**) feel more ambient
-- Shorter loops (**5-8 sec**) feel more dynamic
+**Transparency** — See exactly what's connected to what
 
-### Output
-- **32:9 @ 5120×1440** for video walls
-- Use **CRF 15-18** for high quality
-- **CRF 22-25** for smaller files
-- Loop 3-5x for longer ambient playback
+**Power** — Fine-tune every parameter
 
----
-
-## Troubleshooting
-
-### "CUDA out of memory"
-- Close other GPU applications
-- Use `--lowvram` flag when launching ComfyUI
-- Reduce output resolution
-- Process in Half resolution first
-
-### "Qwen model download failed"
-- Check internet connection
-- Ensure 50GB+ free disk space
-- Try: `huggingface-cli login` first
-
-### "SHARP checkpoint not found"
-- Download manually:
-  ```
-  huggingface-cli download apple/Sharp sharp_2572gikvuh.pt --local-dir models/sharp
-  ```
-
-### "FFmpeg not found"
-- Install FFmpeg: https://ffmpeg.org/download.html
-- Or: `pip install imageio-ffmpeg`
-
-### Video is black
-- Check gsplat installation: `pip install gsplat`
-- Verify CUDA is working: `python -c "import torch; print(torch.cuda.is_available())"`
+**Reproducibility** — Save workflows, share with others
 
 ---
 
@@ -247,27 +167,66 @@ python main.py --listen --highvram
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
-| GPU | RTX 3090 (24GB) | RTX 4090/5090 (24-32GB) |
-| RAM | 32GB | 64GB+ |
-| Storage | 50GB free | 100GB+ SSD |
-| OS | Windows 10/11 | Windows 11 |
+| **GPU** | RTX 3090 (24GB) | RTX 4090/5090 |
+| **RAM** | 32GB | 64GB+ |
+| **Storage** | 60GB free | 100GB+ SSD |
+| **OS** | Windows 10 | Windows 11 |
+
+---
+
+## Troubleshooting
+
+### "CUDA out of memory"
+
+- Close other GPU apps
+- Use `--lowvram` flag when launching
+- Reduce output resolution
+- Process enhancement and rendering separately
+
+### "Node not found"
+
+- Ensure all files are in `custom_nodes/parallax_studio/`
+- Restart ComfyUI after adding nodes
+- Check ComfyUI console for error messages
+
+### "Qwen download slow"
+
+- It's 40GB — be patient
+- Check internet connection
+- Try `huggingface-cli login` first
+
+### "SHARP checkpoint missing"
+
+```bash
+huggingface-cli download apple/Sharp sharp_2572gikvuh.pt --local-dir ComfyUI/models/sharp
+```
+
+---
+
+## Tips
+
+✓ **Start simple** — Use the pre-built workflow first
+
+✓ **Toggle Qwen** — Set bypass to FALSE to skip enhancement
+
+✓ **Preview first** — Use low resolution for test renders
+
+✓ **Save workflows** — Keep variations for different styles
+
+✗ **Don't close the window** — ComfyUI runs in the terminal
 
 ---
 
 ## Credits
 
-- **Apple SHARP**: [arxiv.org/abs/2512.10685](https://arxiv.org/abs/2512.10685)
-- **Qwen-Image-Edit**: [Qwen Team](https://huggingface.co/Qwen/Qwen-Image-Edit)
-- **ComfyUI**: [github.com/comfyanonymous/ComfyUI](https://github.com/comfyanonymous/ComfyUI)
-- **gsplat**: [github.com/nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat)
+- **Apple SHARP** — [arxiv.org/abs/2512.10685](https://arxiv.org/abs/2512.10685)
+- **Qwen-Image-Edit** — [Alibaba Qwen Team](https://huggingface.co/Qwen/Qwen-Image-Edit)
+- **ComfyUI** — [github.com/comfyanonymous/ComfyUI](https://github.com/comfyanonymous/ComfyUI)
+- **gsplat** — [github.com/nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat)
 
 ---
 
-## License
-
-Parallax Studio nodes are provided under MIT License.
-Models used (SHARP, Qwen) are subject to their respective licenses.
-
----
-
-*Built for the RTX 5090 Lab — Transform photos into living displays.*
+<p align="center">
+<b>◈ Parallax Studio v1.2 — ComfyUI Edition</b><br>
+<i>Your Photos. Alive.</i>
+</p>
