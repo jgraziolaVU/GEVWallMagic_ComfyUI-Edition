@@ -1,12 +1,14 @@
 """
-Parallax Studio - ComfyUI Custom Nodes
+◈ Parallax Studio - ComfyUI Edition
 Version 1.2
+
+Your Photos. Alive.
 
 A complete pipeline for creating depth-enhanced parallax videos
 by chaining Qwen-Image-Edit and Apple SHARP.
 
 Installation:
-    Place this folder in ComfyUI/custom_nodes/parallax_studio/
+    Place this folder in: ComfyUI/custom_nodes/parallax_studio/
 
 Nodes included:
     - Qwen-Image-Edit Loader: Load the Qwen image editing model
@@ -18,8 +20,6 @@ Nodes included:
     - Video Encode: Encode frames to video with FFmpeg
     - Save Video: Save video to output folder
     - Plus utility nodes for cropping, switching, looping
-
-GitHub: https://github.com/your-repo/parallax-studio-comfyui
 """
 
 from .qwen_nodes import NODE_CLASS_MAPPINGS as QWEN_NODES
@@ -51,8 +51,15 @@ __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 __version__ = "1.2.0"
 __author__ = "Villanova GIS Lab"
 
-print(f"\n{'='*60}")
-print(f"  ◈ PARALLAX STUDIO v{__version__} loaded!")
-print(f"  Nodes: {len(NODE_CLASS_MAPPINGS)} custom nodes registered")
-print(f"  Category: Parallax Studio/*")
-print(f"{'='*60}\n")
+print(f"""
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║     ◈ PARALLAX STUDIO v{__version__} - ComfyUI Edition         ║
+║                                                            ║
+║              Your Photos. Alive.                           ║
+║                                                            ║
+║     Nodes loaded: {len(NODE_CLASS_MAPPINGS):2d}                                      ║
+║     Category: Parallax Studio/*                            ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+""")
