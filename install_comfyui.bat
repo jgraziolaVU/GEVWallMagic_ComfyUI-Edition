@@ -74,13 +74,13 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
-for /f "tokens=*" %%i in ('nvidia-smi --query-gpu=name,memory.total --format=csv,noheader') do (
-    echo  ✓ Found GPU: %%i
-)
+echo  ✓ NVIDIA GPU detected
+nvidia-smi --query-gpu=name --format=csv,noheader 2>nul || echo     (Run nvidia-smi manually to see details)
+echo.
 echo.
 
 :: ============================================================================
-:: STEP 2: Check Git
+:: STEP 2: Check/Install Git
 :: ============================================================================
 
 echo.
@@ -89,45 +89,172 @@ echo.
 
 where git >nul 2>&1
 if %errorLevel% neq 0 (
-    echo  Git not found. Please install from:
-    echo  https://git-scm.com/download/win
+    echo  Git not found. Downloading installer...
     echo.
-    echo  Then restart this installer.
+    
+    :: Download Git installer
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe' -OutFile '%TEMP%\git_installer.exe'"
+    
+    if not exist "%TEMP%\git_installer.exe" (
+        echo  ╔════════════════════════════════════════════════════════════╗
+        echo  ║  ERROR: Failed to download Git installer.                  ║
+        echo  ║                                                            ║
+        echo  ║  Please download manually from:                            ║
+        echo  ║  https://git-scm.com/download/win                          ║
+        echo  ╚════════════════════════════════════════════════════════════╝
+        echo.
+        pause
+        exit /b 1
+    )
+    
+    echo  Installing Git - please follow the prompts...
+    echo.
+    echo  ────────────────────────────────────────────────────────────
+    echo   IMPORTANT: Use default options, just keep clicking Next.
+    echo  ────────────────────────────────────────────────────────────
+    echo.
+    
+    start /wait "" "%TEMP%\git_installer.exe"
+    del "%TEMP%\git_installer.exe" >nul 2>&1
+    
+    :: Refresh PATH
+    set "PATH=%PATH%;C:\Program Files\Git\bin;C:\Program Files\Git\cmd"
+    
+    :: Verify installation
+    where git >nul 2>&1
+    if %errorLevel% neq 0 (
+        echo.
+        echo  ╔════════════════════════════════════════════════════════════╗
+        echo  ║  Git installed but PATH not updated.                       ║
+        echo  ║                                                            ║
+        echo  ║  Please RESTART this installer to continue.                ║
+        echo  ╚════════════════════════════════════════════════════════════╝
+        echo.
+        pause
+        exit /b 0
+    )
+    
+    echo  ✓ Git installed successfully
+) else (
+    echo  ✓ Git is installed
+)
+
+echo.
+
+:: ============================================================================
+:: STEP 3: Check/Install Miniconda
+:: ============================================================================
+
+echo.
+echo  [Step 3/8] Checking for Conda...
+echo.
+
+where conda >nul 2>&1
+if %errorLevel% neq 0 (
+    echo  Conda not found. Downloading Miniconda...
+    echo.
+    
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe' -OutFile '%TEMP%\miniconda_installer.exe'"
+    
+    if not exist "%TEMP%\miniconda_installer.exe" (
+        echo  ╔════════════════════════════════════════════════════════════╗
+        echo  ║  ERROR: Failed to download Miniconda.                      ║
+        echo  ║                                                            ║
+        echo  ║  Please download manually from:                            ║
+        echo  ║  https://docs.conda.io/en/latest/miniconda.html            ║
+        echo  ╚════════════════════════════════════════════════════════════╝
+        echo.
+        pause
+        exit /b 1
+    )
+    
+    echo  Installing Miniconda - please follow the prompts...
+    echo.
+    echo  ────────────────────────────────────────────────────────────
+    echo   IMPORTANT: 
+    echo     - Install for "Just Me"
+    echo     - CHECK "Add to PATH" when prompted!
+    echo  ────────────────────────────────────────────────────────────
+    echo.
+    
+    start /wait "" "%TEMP%\miniconda_installer.exe"
+    del "%TEMP%\miniconda_installer.exe" >nul 2>&1
+    
+    echo.
+    echo  ╔════════════════════════════════════════════════════════════╗
+    echo  ║  Miniconda installed.                                      ║
+    echo  ║                                                            ║
+    echo  ║  Please CLOSE this window and RESTART the installer.       ║
+    echo  ╚════════════════════════════════════════════════════════════╝
+    echo.
+    pause
+    exit /b 0
+) else (
+    echo  ✓ Conda is installed
+)
+
+echo.
+
+:: ============================================================================
+:: STEP 4: Create Conda Environment
+:: ============================================================================
+
+echo.
+echo  [Step 4/8] Setting up Python environment...
+echo.
+
+:: Accept Conda Terms of Service (required since 2024)
+echo  Accepting Conda Terms of Service...
+call conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main >nul 2>&1
+call conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r >nul 2>&1
+call conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/msys2 >nul 2>&1
+
+:: Check if environment exists
+call conda env list | findstr /C:"parallax_comfyui" >nul 2>&1
+if %errorLevel% equ 0 (
+    echo  Environment 'parallax_comfyui' exists. Activating...
+) else (
+    echo  Creating conda environment with Python 3.11...
+    call conda create -n parallax_comfyui python=3.11 -y
+    
+    if %errorLevel% neq 0 (
+        echo  ╔════════════════════════════════════════════════════════════╗
+        echo  ║  ERROR: Failed to create conda environment.                ║
+        echo  ║                                                            ║
+        echo  ║  Try running manually:                                     ║
+        echo  ║  conda create -n parallax_comfyui python=3.11 -y           ║
+        echo  ╚════════════════════════════════════════════════════════════╝
+        echo.
+        pause
+        exit /b 1
+    )
+)
+
+:: Activate environment
+call conda activate parallax_comfyui
+
+if %errorLevel% neq 0 (
+    echo  ╔════════════════════════════════════════════════════════════╗
+    echo  ║  ERROR: Failed to activate conda environment.              ║
+    echo  ║                                                            ║
+    echo  ║  Try running manually:                                     ║
+    echo  ║  conda activate parallax_comfyui                           ║
+    echo  ╚════════════════════════════════════════════════════════════╝
+    echo.
     pause
     exit /b 1
 )
 
-echo  ✓ Git is installed
-echo.
-
-:: ============================================================================
-:: STEP 3: Check Python
-:: ============================================================================
-
-echo.
-echo  [Step 3/8] Checking for Python...
-echo.
-
-where python >nul 2>&1
-if %errorLevel% neq 0 (
-    echo  Python not found. Installing via winget...
-    winget install Python.Python.3.11
-    echo.
-    echo  Python installed. Please RESTART this installer.
-    pause
-    exit /b 0
-)
-
+echo  ✓ Python 3.11 environment ready
 python --version
-echo  ✓ Python is installed
 echo.
 
 :: ============================================================================
-:: STEP 4: Create Directory & Clone ComfyUI
+:: STEP 5: Clone/Update ComfyUI
 :: ============================================================================
 
 echo.
-echo  [Step 4/8] Setting up ComfyUI...
+echo  [Step 5/8] Setting up ComfyUI...
 echo.
 
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
@@ -147,22 +274,44 @@ echo  ✓ ComfyUI ready
 echo.
 
 :: ============================================================================
-:: STEP 5: Install Python Dependencies
+:: STEP 6: Install Python Dependencies
 :: ============================================================================
 
 echo.
-echo  [Step 5/8] Installing Python dependencies...
+echo  [Step 6/8] Installing Python dependencies...
 echo  (This may take 10-15 minutes)
 echo.
 
 cd "%COMFYUI_DIR%"
 
-:: ComfyUI requirements
-pip install -r requirements.txt
+:: Make sure we're in the conda environment
+call conda activate parallax_comfyui
 
-:: PyTorch with CUDA
+:: Install PyTorch with CUDA FIRST
 echo  Installing PyTorch with CUDA 12.1...
+pip uninstall torch torchvision torchaudio -y >nul 2>&1
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+:: Verify CUDA is available
+python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'" 2>nul
+if %errorLevel% neq 0 (
+    echo  ╔════════════════════════════════════════════════════════════╗
+    echo  ║  ERROR: PyTorch CUDA installation failed!                  ║
+    echo  ║                                                            ║
+    echo  ║  Please run manually in conda environment:                 ║
+    echo  ║  conda activate parallax_comfyui                           ║
+    echo  ║  pip install torch torchvision --index-url                 ║
+    echo  ║  https://download.pytorch.org/whl/cu121                    ║
+    echo  ╚════════════════════════════════════════════════════════════╝
+    echo.
+    pause
+    exit /b 1
+)
+echo  ✓ PyTorch with CUDA verified
+
+:: ComfyUI requirements
+echo  Installing ComfyUI requirements...
+pip install -r requirements.txt
 
 :: Qwen dependencies
 echo  Installing Qwen-Image-Edit (diffusers)...
@@ -177,11 +326,11 @@ echo  ✓ Python dependencies installed
 echo.
 
 :: ============================================================================
-:: STEP 6: Install Parallax Studio Nodes
+:: STEP 7: Install Parallax Studio Nodes
 :: ============================================================================
 
 echo.
-echo  [Step 6/8] Installing Parallax Studio nodes...
+echo  [Step 7/8] Installing Parallax Studio nodes...
 echo.
 
 if not exist "%NODES_DIR%" mkdir "%NODES_DIR%"
@@ -209,14 +358,19 @@ if not exist "%COMFYUI_DIR%\models\sharp" mkdir "%COMFYUI_DIR%\models\sharp"
 echo.
 
 :: ============================================================================
-:: STEP 7: Download SHARP Model
+:: STEP 8: Download SHARP Model & FFmpeg
 :: ============================================================================
 
 echo.
-echo  [Step 7/8] Downloading SHARP model (~500MB)...
+echo  [Step 8/8] Downloading SHARP model and FFmpeg...
 echo.
 
-python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='apple/Sharp', filename='sharp_2572gikvuh.pt', local_dir='%COMFYUI_DIR%\models\sharp')"
+:: Make sure we're in conda env
+call conda activate parallax_comfyui
+
+:: Download SHARP model
+echo  Downloading SHARP model (~500MB)...
+python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='apple/Sharp', filename='sharp_2572gikvuh.pt', local_dir=r'%COMFYUI_DIR%\models\sharp')"
 
 if %errorLevel% neq 0 (
     echo  WARNING: Model download failed. Will download on first use.
@@ -224,20 +378,11 @@ if %errorLevel% neq 0 (
     echo  ✓ SHARP model downloaded
 )
 
-echo.
-
-:: ============================================================================
-:: STEP 8: Install FFmpeg
-:: ============================================================================
-
-echo.
-echo  [Step 8/8] Setting up FFmpeg...
-echo.
-
+:: Install FFmpeg
 where ffmpeg >nul 2>&1
 if %errorLevel% neq 0 (
-    echo  Installing FFmpeg via pip...
-    pip install imageio-ffmpeg
+    echo  Installing FFmpeg...
+    conda install -c conda-forge ffmpeg -y
 ) else (
     echo  ✓ FFmpeg already installed
 )
@@ -255,6 +400,7 @@ echo.
 (
 echo @echo off
 echo title ◈ Parallax Studio v1.2 - ComfyUI
+echo call conda activate parallax_comfyui
 echo cd /d "%COMFYUI_DIR%"
 echo cls
 echo echo.
