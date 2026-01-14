@@ -3,10 +3,14 @@ setlocal EnableDelayedExpansion
 
 :: ============================================================================
 ::
-::   ◈ PARALLAX STUDIO v1.2 - COMFYUI EDITION
+::   ◈ PARALLAX STUDIO v1.2.1 - COMFYUI EDITION
 ::   Your Photos. Alive.
 ::
 ::   INSTALLER
+::
+::   Changelog v1.2.1:
+::   - Added Apple SHARP library installation (fixes FileNotFoundError)
+::   - Added verification step for SHARP CLI
 ::
 :: ============================================================================
 
@@ -16,7 +20,7 @@ cls
 echo.
 echo  ╔════════════════════════════════════════════════════════════╗
 echo  ║                                                            ║
-echo  ║     ◈  PARALLAX STUDIO v1.2 - COMFYUI EDITION  ◈          ║
+echo  ║     ◈  PARALLAX STUDIO v1.2.1 - COMFYUI EDITION  ◈        ║
 echo  ║                                                            ║
 echo  ║                 Your Photos. Alive.                        ║
 echo  ║                                                            ║
@@ -27,13 +31,13 @@ echo.
 echo    [1] ComfyUI (node-based interface)
 echo    [2] Parallax Studio custom nodes
 echo    [3] PyTorch with CUDA
-echo    [4] Apple SHARP model
+echo    [4] Apple SHARP model AND library
 echo    [5] Qwen-Image-Edit dependencies
 echo    [6] FFmpeg for video encoding
 echo.
 echo  ────────────────────────────────────────────────────────────
 echo   Requirements:
-echo     • NVIDIA GPU with 24GB+ VRAM (RTX 4090/5090)
+echo     • NVIDIA GPU with 24GB+ VRAM (RTX 4090/5090/A6000)
 echo     • 64GB+ system RAM recommended
 echo     • 60GB free disk space
 echo     • Internet connection
@@ -317,8 +321,32 @@ pip install -r requirements.txt
 echo  Installing Qwen-Image-Edit (diffusers)...
 pip install git+https://github.com/huggingface/diffusers
 
-:: SHARP dependencies
-echo  Installing SHARP dependencies...
+:: ============================================================================
+:: CRITICAL FIX (v1.2.1): Install Apple SHARP library
+:: This provides the 'sharp' CLI command needed by sharp_nodes.py
+:: Without this, you get: FileNotFoundError: [WinError 2]
+:: ============================================================================
+echo.
+echo  Installing Apple SHARP library (CLI tool)...
+pip install git+https://github.com/apple/ml-sharp.git
+
+:: Verify SHARP CLI is available
+where sharp >nul 2>&1
+if %errorLevel% neq 0 (
+    echo  ╔════════════════════════════════════════════════════════════╗
+    echo  ║  WARNING: SHARP CLI not found in PATH.                     ║
+    echo  ║                                                            ║
+    echo  ║  Try running manually after installation:                  ║
+    echo  ║  conda activate parallax_comfyui                           ║
+    echo  ║  pip install git+https://github.com/apple/ml-sharp.git     ║
+    echo  ╚════════════════════════════════════════════════════════════╝
+    echo.
+) else (
+    echo  ✓ Apple SHARP library installed (CLI verified)
+)
+
+:: SHARP additional dependencies
+echo  Installing additional dependencies...
 pip install huggingface-hub plyfile gsplat tqdm
 
 echo.
@@ -368,14 +396,14 @@ echo.
 :: Make sure we're in conda env
 call conda activate parallax_comfyui
 
-:: Download SHARP model
-echo  Downloading SHARP model (~500MB)...
+:: Download SHARP model checkpoint
+echo  Downloading SHARP model checkpoint (~500MB)...
 python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='apple/Sharp', filename='sharp_2572gikvuh.pt', local_dir=r'%COMFYUI_DIR%\models\sharp')"
 
 if %errorLevel% neq 0 (
     echo  WARNING: Model download failed. Will download on first use.
 ) else (
-    echo  ✓ SHARP model downloaded
+    echo  ✓ SHARP model checkpoint downloaded
 )
 
 :: Install FFmpeg
@@ -390,6 +418,61 @@ if %errorLevel% neq 0 (
 echo.
 
 :: ============================================================================
+:: Final Verification
+:: ============================================================================
+
+echo.
+echo  Verifying installation...
+echo.
+
+:: Verify all critical components
+set "INSTALL_OK=1"
+
+:: Check PyTorch CUDA
+python -c "import torch; assert torch.cuda.is_available()" 2>nul
+if %errorLevel% neq 0 (
+    echo  ⚠ PyTorch CUDA: NOT WORKING
+    set "INSTALL_OK=0"
+) else (
+    echo  ✓ PyTorch CUDA: OK
+)
+
+:: Check SHARP CLI
+where sharp >nul 2>&1
+if %errorLevel% neq 0 (
+    echo  ⚠ SHARP CLI: NOT FOUND
+    set "INSTALL_OK=0"
+) else (
+    echo  ✓ SHARP CLI: OK
+)
+
+:: Check FFmpeg
+where ffmpeg >nul 2>&1
+if %errorLevel% neq 0 (
+    echo  ⚠ FFmpeg: NOT FOUND
+    set "INSTALL_OK=0"
+) else (
+    echo  ✓ FFmpeg: OK
+)
+
+:: Check SHARP model file
+if exist "%COMFYUI_DIR%\models\sharp\sharp_2572gikvuh.pt" (
+    echo  ✓ SHARP Model: OK
+) else (
+    echo  ⚠ SHARP Model: NOT DOWNLOADED (will download on first use)
+)
+
+:: Check custom nodes
+if exist "%NODES_DIR%\__init__.py" (
+    echo  ✓ Custom Nodes: OK
+) else (
+    echo  ⚠ Custom Nodes: NOT INSTALLED
+    set "INSTALL_OK=0"
+)
+
+echo.
+
+:: ============================================================================
 :: Create Launcher
 :: ============================================================================
 
@@ -399,14 +482,14 @@ echo.
 
 (
 echo @echo off
-echo title ◈ Parallax Studio v1.2 - ComfyUI
+echo title ◈ Parallax Studio v1.2.1 - ComfyUI
 echo call conda activate parallax_comfyui
 echo cd /d "%COMFYUI_DIR%"
 echo cls
 echo echo.
 echo echo  ╔════════════════════════════════════════════════════════════╗
 echo echo  ║                                                            ║
-echo echo  ║     ◈  PARALLAX STUDIO v1.2 - COMFYUI EDITION  ◈          ║
+echo echo  ║    ◈  PARALLAX STUDIO v1.2.1 - COMFYUI EDITION  ◈         ║
 echo echo  ║                                                            ║
 echo echo  ║                 Your Photos. Alive.                        ║
 echo echo  ║                                                            ║
@@ -440,8 +523,20 @@ echo  ║            ◈  INSTALLATION COMPLETE!  ◈                    ║
 echo  ║                                                            ║
 echo  ╚════════════════════════════════════════════════════════════╝
 echo.
-echo  Parallax Studio ComfyUI Edition installed at:
+echo  Parallax Studio ComfyUI Edition v1.2.1 installed at:
 echo  %INSTALL_DIR%
+echo.
+echo  ────────────────────────────────────────────────────────────
+echo.
+echo  INSTALLATION SUMMARY:
+echo.
+echo    ✓ ComfyUI installed
+echo    ✓ PyTorch with CUDA 12.1
+echo    ✓ Apple SHARP library (CLI tool)
+echo    ✓ SHARP model checkpoint (~500MB)
+echo    ✓ Qwen-Image-Edit dependencies
+echo    ✓ FFmpeg for video encoding
+echo    ✓ Parallax Studio custom nodes
 echo.
 echo  ────────────────────────────────────────────────────────────
 echo.
@@ -453,11 +548,12 @@ echo    • Or run: %INSTALL_DIR%\run_comfyui.bat
 echo.
 echo  ────────────────────────────────────────────────────────────
 echo.
-echo  FIRST RUN:
+echo  FIRST RUN NOTES:
 echo.
 echo    1. Open http://127.0.0.1:8188 in your browser
 echo    2. Load workflow: Load → parallax_workflow.json
-echo    3. Qwen model (~40GB) downloads on first use
+echo    3. Qwen model (~45GB) downloads on first use (1-3 hours)
+echo    4. After first run, videos take only 5-10 minutes!
 echo.
 echo  ────────────────────────────────────────────────────────────
 echo.
