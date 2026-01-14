@@ -491,7 +491,7 @@ echo.
 
 (
 echo @echo off
-echo title ◈ Parallax Studio v1.2.1 - ComfyUI
+echo title ◈ Parallax Studio v1.2.2 - ComfyUI
 echo call conda activate parallax_comfyui
 echo cd /d "%COMFYUI_DIR%"
 echo cls
