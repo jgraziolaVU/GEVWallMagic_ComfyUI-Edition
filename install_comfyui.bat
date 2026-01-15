@@ -10,6 +10,7 @@ setlocal EnableDelayedExpansion
 ::
 ::   Changelog v1.2.2:
 ::   - Added Accelerate for faster model loading (Qwen loads 3-5x faster)
+::   - Added Visual Studio Build Tools check (required for gsplat)
 ::
 ::   Changelog v1.2.1:
 ::   - Added Apple SHARP library installation (fixes FileNotFoundError)
@@ -37,6 +38,7 @@ echo    [3] PyTorch with CUDA
 echo    [4] Apple SHARP model AND library
 echo    [5] Qwen-Image-Edit dependencies
 echo    [6] FFmpeg for video encoding
+echo    [7] Accelerate for faster model loading
 echo.
 echo  ────────────────────────────────────────────────────────────
 echo   Requirements:
@@ -44,6 +46,7 @@ echo     • NVIDIA GPU with 24GB+ VRAM (RTX 4090/5090/A6000)
 echo     • 64GB+ system RAM recommended
 echo     • 60GB free disk space
 echo     • Internet connection
+echo     • Visual Studio Build Tools with C++ (for gsplat)
 echo  ────────────────────────────────────────────────────────────
 echo.
 echo  Estimated time: 20-40 minutes
@@ -62,11 +65,52 @@ set "NODES_DIR=%COMFYUI_DIR%\custom_nodes\parallax_studio"
 set "SCRIPT_DIR=%~dp0"
 
 :: ============================================================================
+:: STEP 0: Check Visual Studio Build Tools
+:: ============================================================================
+
+echo.
+echo  [Step 0/9] Checking for Visual Studio Build Tools...
+echo.
+
+where cl >nul 2>&1
+if %errorLevel% neq 0 (
+    :: Check if VS Build Tools is installed but not in PATH
+    if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC" (
+        echo  ✓ Visual Studio Build Tools detected
+        echo    Note: You may need to run from Developer Command Prompt
+        echo          if gsplat compilation fails.
+    ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC" (
+        echo  ✓ Visual Studio Build Tools detected
+    ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC" (
+        echo  ✓ Visual Studio Build Tools detected (2019)
+    ) else (
+        echo  ╔════════════════════════════════════════════════════════════╗
+        echo  ║  WARNING: Visual Studio Build Tools not detected!          ║
+        echo  ║                                                            ║
+        echo  ║  gsplat requires C++ compiler for CUDA extensions.         ║
+        echo  ║                                                            ║
+        echo  ║  Please install Visual Studio Build Tools:                 ║
+        echo  ║  https://visualstudio.microsoft.com/visual-cpp-build-tools ║
+        echo  ║                                                            ║
+        echo  ║  Select: "Desktop development with C++"                    ║
+        echo  ╚════════════════════════════════════════════════════════════╝
+        echo.
+        echo  You can continue, but rendering will fail without Build Tools.
+        echo.
+        pause
+    )
+) else (
+    echo  ✓ C++ compiler (cl.exe) found in PATH
+)
+
+echo.
+
+:: ============================================================================
 :: STEP 1: Check GPU
 :: ============================================================================
 
 echo.
-echo  [Step 1/8] Checking for NVIDIA GPU...
+echo  [Step 1/9] Checking for NVIDIA GPU...
 echo.
 
 nvidia-smi >nul 2>&1
@@ -91,7 +135,7 @@ echo.
 :: ============================================================================
 
 echo.
-echo  [Step 2/8] Checking for Git...
+echo  [Step 2/9] Checking for Git...
 echo.
 
 where git >nul 2>&1
@@ -153,7 +197,7 @@ echo.
 :: ============================================================================
 
 echo.
-echo  [Step 3/8] Checking for Conda...
+echo  [Step 3/9] Checking for Conda...
 echo.
 
 where conda >nul 2>&1
@@ -207,7 +251,7 @@ echo.
 :: ============================================================================
 
 echo.
-echo  [Step 4/8] Setting up Python environment...
+echo  [Step 4/9] Setting up Python environment...
 echo.
 
 :: Accept Conda Terms of Service (required since 2024)
@@ -261,7 +305,7 @@ echo.
 :: ============================================================================
 
 echo.
-echo  [Step 5/8] Setting up ComfyUI...
+echo  [Step 5/9] Setting up ComfyUI...
 echo.
 
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
@@ -285,7 +329,7 @@ echo.
 :: ============================================================================
 
 echo.
-echo  [Step 6/8] Installing Python dependencies...
+echo  [Step 6/9] Installing Python dependencies...
 echo  (This may take 10-15 minutes)
 echo.
 
@@ -320,9 +364,11 @@ echo  ✓ PyTorch with CUDA verified
 echo  Installing ComfyUI requirements...
 pip install -r requirements.txt
 
+:: ============================================================================
 :: Accelerate for faster/lighter model loading (v1.2.2)
 :: Reduces Qwen load time from ~3 min to ~30 sec
 :: Reduces peak RAM usage during model loading
+:: ============================================================================
 echo  Installing Accelerate (faster model loading)...
 pip install accelerate
 
@@ -356,7 +402,7 @@ if %errorLevel% neq 0 (
 
 :: SHARP additional dependencies
 echo  Installing additional dependencies...
-pip install huggingface-hub plyfile gsplat tqdm
+pip install huggingface-hub plyfile gsplat tqdm ninja
 
 echo.
 echo  ✓ Python dependencies installed
@@ -367,7 +413,7 @@ echo.
 :: ============================================================================
 
 echo.
-echo  [Step 7/8] Installing Parallax Studio nodes...
+echo  [Step 7/9] Installing Parallax Studio nodes...
 echo.
 
 if not exist "%NODES_DIR%" mkdir "%NODES_DIR%"
@@ -399,7 +445,7 @@ echo.
 :: ============================================================================
 
 echo.
-echo  [Step 8/8] Downloading SHARP model and FFmpeg...
+echo  [Step 8/9] Downloading SHARP model and FFmpeg...
 echo.
 
 :: Make sure we're in conda env
@@ -427,11 +473,11 @@ if %errorLevel% neq 0 (
 echo.
 
 :: ============================================================================
-:: Final Verification
+:: STEP 9: Final Verification
 :: ============================================================================
 
 echo.
-echo  Verifying installation...
+echo  [Step 9/9] Verifying installation...
 echo.
 
 :: Verify all critical components
@@ -444,6 +490,14 @@ if %errorLevel% neq 0 (
     set "INSTALL_OK=0"
 ) else (
     echo  ✓ PyTorch CUDA: OK
+)
+
+:: Check Accelerate
+python -c "import accelerate" 2>nul
+if %errorLevel% neq 0 (
+    echo  ⚠ Accelerate: NOT INSTALLED
+) else (
+    echo  ✓ Accelerate: OK
 )
 
 :: Check SHARP CLI
@@ -477,6 +531,14 @@ if exist "%NODES_DIR%\__init__.py" (
 ) else (
     echo  ⚠ Custom Nodes: NOT INSTALLED
     set "INSTALL_OK=0"
+)
+
+:: Check for Visual Studio Build Tools
+where cl >nul 2>&1
+if %errorLevel% neq 0 (
+    echo  ⚠ C++ Compiler: NOT IN PATH (gsplat may need Developer Command Prompt)
+) else (
+    echo  ✓ C++ Compiler: OK
 )
 
 echo.
@@ -564,6 +626,14 @@ echo    1. Open http://127.0.0.1:8188 in your browser
 echo    2. Load workflow: Load → parallax_workflow.json
 echo    3. Qwen model (~45GB) downloads on first use (1-3 hours)
 echo    4. After first run, videos take only 5-10 minutes!
+echo.
+echo  ────────────────────────────────────────────────────────────
+echo.
+echo  REQUIREMENTS REMINDER:
+echo.
+echo    If rendering fails with "cl.exe not found", install:
+echo    Visual Studio Build Tools with "Desktop development with C++"
+echo    https://visualstudio.microsoft.com/visual-cpp-build-tools/
 echo.
 echo  ────────────────────────────────────────────────────────────
 echo.
